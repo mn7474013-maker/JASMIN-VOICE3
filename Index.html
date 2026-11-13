@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080e1c">
+<title>JASMIN | Industrial Assistant</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:16px;
+ background:radial-gradient(circle at top,#17294a,#080e1c 55%);
+ color:#f4f7ff;font-family:Arial,sans-serif;
+}
+.app{max-width:560px;margin:auto}
+header{text-align:center;padding:20px 0}
+.logo{
+ width:68px;height:68px;margin:auto;border-radius:22px;
+ display:grid;place-items:center;font-size:32px;
+ background:linear-gradient(135deg,#765bff,#19c7dd);
+ box-shadow:0 0 35px #22c9ff55;
+}
+h1{letter-spacing:5px;margin:12px 0 4px}
+.sub,.small{font-size:12px;color:#91a4c5}
+.card{
+ background:linear-gradient(145deg,#182943dd,#101a2ddd);
+ border:1px solid #34496a;border-radius:19px;
+ padding:17px;margin:14px 0;
+ box-shadow:0 8px 25px #0004;
+}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+select{
+ background:#263956;color:white;border:1px solid #486083;
+ padding:10px;border-radius:10px;
+}
+.status{font-size:13px;margin-top:13px;color:#54dfbb}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{
+ background:#26395699;border:1px solid #405575;
+ padding:14px;border-radius:14px;
+}
+.metric span{font-size:12px;color:#a9bad5}
+.metric strong{display:block;font-size:23px;margin-top:8px}
+.micbox{text-align:center;padding:20px 8px}
+#mic{
+ width:112px;height:112px;border:0;border-radius:50%;
+ color:white;font-size:39px;
+ background:linear-gradient(135deg,#765bff,#13c6e5);
+ box-shadow:0 0 35px #23bfff66;
+}
+#mic.active{
+ background:linear-gradient(135deg,#ed477b,#ff815d);
+ animation:pulse 1.5s infinite;
+}
+@keyframes pulse{
+ 50%{box-shadow:0 0 45px #ff477b99}
+}
+#heard{min-height:25px;margin-top:16px;color:#d7e1f5}
+#reply{min-height:24px;margin-top:8px;color:#54dfbb}
+.action{
+ border:0;border-radius:12px;padding:12px;
+ background:#304765;color:white;font-weight:bold;
+}
+.full{width:100%}
+#micStop{margin-top:13px}
+.load{
+ display:flex;justify-content:space-between;
+ align-items:center;padding:14px 0;
+ border-bottom:1px solid #34435c;
+}
+.load:last-child{border:0}
+.load button{
+ min-width:75px;padding:10px 15px;
+ border:0;border-radius:22px;font-weight:bold;
+}
+.on{background:#16c99a;color:#06251d}
+.off{background:#354762;color:white}
+.danger{background:#e64d71;color:white}
+#history{max-height:220px;overflow:auto;font-size:13px;line-height:1.7}
+.entry{padding:8px 0;border-bottom:1px solid #34435c}
+footer{text-align:center;color:#7185a5;font-size:11px;padding:20px}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+<header>
+ <div class="logo">✦</div>
+ <h1>JASMIN</h1>
+ <div class="sub">SMART INDUSTRIAL LOAD ASSISTANT</div>
+</header>
+
+<div class="card">
+ <div class="row">
+  <div>
+   <strong>Assistant settings</strong>
+   <div class="small">Choose your speaking language</div>
+  </div>
+  <select id="language">
+   <option value="en-IN">English</option>
+   <option value="hi-IN">हिन्दी</option>
+  </select>
+ </div>
+ <div class="status" id="status">● Connecting...</div>
+</div>
+
+<div class="card micbox">
+ <div class="small">JASMIN VOICE ASSISTANT</div>
+ <br>
+ <button id="mic">🎙</button>
+ <div id="heard">Tap Start Listening to talk with Jasmin.</div>
+ <div id="reply"></div>
+ <button class="action full" id="micStop">STOP LISTENING</button>
+ <p class="small">Continuous listening mode. Keep this page open.</p>
+</div>
+
+<div class="card">
+ <div class="row">
+  <strong>Electrical monitoring</strong>
+  <span class="small" id="updated">Waiting...</span>
+ </div>
+ <br>
+ <div class="metrics">
+  <div class="metric">
+   <span>Voltage</span>
+   <strong id="voltage">-- V</strong>
+  </div>
+  <div class="metric">
+   <span>Current</span>
+   <strong id="current">-- A</strong>
+  </div>
+  <div class="metric">
+   <span>Power</span>
+   <strong id="power">-- W</strong>
+  </div>
+  <div class="metric">
+   <span>Energy</span>
+   <strong id="energy">-- Wh</strong>
+  </div>
+ </div>
+</div>
+
+<div class="card">
+ <strong>Load control</strong>
+ <div class="small">Five independent DC loads</div>
+
+ <div class="load"><span>💡 Lamp 1</span><button id="b0" class="off">OFF</button></div>
+ <div class="load"><span>💡 Lamp 2</span><button id="b1" class="off">OFF</button></div>
+ <div class="load"><span>⚙️ Geared Motor</span><button id="b2" class="off">OFF</button></div>
+ <div class="load"><span>🌀 Cooler Fan</span><button id="b3" class="off">OFF</button></div>
+ <div class="load"><span>💧 Water Pump</span><button id="b4" class="off">OFF</button></div>
+
+ <br>
+ <button class="action danger full" id="allOff">TURN OFF ALL LOADS</button>
+</div>
+
+<div class="card">
+ <div class="row">
+  <strong>Assistant conversation</strong>
+  <button class="action" id="clearHistory">Clear</button>
+ </div>
+ <div id="history">JASMIN is ready.</div>
+</div>
+
+<footer>
+ JASMIN • ESP32 • INA219 • BLYNK<br>
+ Smart Industrial Load Management
+</footer>
+</div>
+
+<script>
+
+/* KEEP YOUR EXISTING APPS SCRIPT DETAILS */
+
+const API_URL = "https://script.google.com/macros/s/AKfycby3ge9HOQ9WC6JToN1mBy_hH45najPy0IhcqbwgBg6XwN3EtlihWbXAhcHJKFZTzAnMlw/exec";
+const API_KEY = "Mondal786";
+
+const names={
+ V0:"Lamp 1",
+ V1:"Lamp 2",
+ V2:"Geared Motor",
+ V3:"Cooler Fan",
+ V4:"Water Pump"
+};
+
+let states={V0:0,V1:0,V2:0,V3:0,V4:0};
+let busy=false;
+let recognition=null;
+let listening=false;
+let speaking=false;
+let processingVoice=false;
+let restartTimer=null;
+let refreshBusy=false;
+let lastCommandTime=0;
+
+const $=id=>document.getElementById(id);
+
+
+/* STATUS AND HISTORY */
+
+function setStatus(message,good=true){
+ $("status").textContent="● "+message;
+ $("status").style.color=good?"#54dfbb":"#ff9999";
+}
+
+function addHistory(who,message){
+ const div=document.createElement("div");
+ div.className="entry";
+
+ const strong=document.createElement("strong");
+ strong.textContent=who+": ";
+
+ const span=document.createElement("span");
+ span.textContent=message;
+
+ div.append(strong,span);
+ $("history").prepend(div);
+}
+
+
+/* VOICE RESPONSE AND MICROPHONE PAUSE */
+
+function scheduleRestart(){
+ if(!listening||speaking||processingVoice)return;
+
+ clearTimeout(restartTimer);
+
+ restartTimer=setTimeout(()=>{
+  if(listening&&!speaking&&!processingVoice){
+   startRecognitionSession();
+  }
+ },500);
+}
+
+function say(message){
+ $("reply").textContent=message;
+ addHistory("JASMIN",message);
+
+ if(!("speechSynthesis" in window)){
+  scheduleRestart();
+  return;
+ }
+
+ speaking=true;
+
+ if(recognition){
+  try{recognition.abort();}catch(e){}
+ }
+
+ speechSynthesis.cancel();
+
+ const utterance=new SpeechSynthesisUtterance(message);
+ utterance.lang=$("language").value;
+ utterance.rate=1.05;
+ utterance.pitch=1;
+
+ let finished=false;
+
+ function finishSpeaking(){
+  if(finished)return;
+  finished=true;
+  speaking=false;
+  scheduleRestart();
+ }
+
+ utterance.onend=finishSpeaking;
+ utterance.onerror=finishSpeaking;
+
+ speechSynthesis.speak(utterance);
+
+ // Safety fallback if the browser fails to fire speech events.
+ setTimeout(finishSpeaking,Math.max(500,message.length*110));
+}
+
+
+/* SERVER CONNECTION */
+
+function callServer(params){
+ return new Promise((resolve,reject)=>{
+
+  if(!API_URL.startsWith("https://script.google.com/")||
+     !API_URL.includes("/exec")){
+   reject(new Error("Check Apps Script URL."));
+   return;
+  }
+
+  const callback="jasmin_"+Date.now()+"_"+
+   Math.floor(Math.random()*100000);
+
+  const script=document.createElement("script");
+  let completed=false;
+
+  function cleanup(){
+   script.remove();
+   delete window[callback];
+  }
+
+  const timer=setTimeout(()=>{
+   if(completed)return;
+   completed=true;
+   cleanup();
+   reject(new Error("Server timeout."));
+  },12000);
+
+  window[callback]=data=>{
+   if(completed)return;
+   completed=true;
+   clearTimeout(timer);
+   cleanup();
+
+   if(!data||!data.ok){
+    reject(new Error(data?.error||"Request failed."));
+   }else{
+    resolve(data);
+   }
+  };
+
+  const query=new URLSearchParams({
+   api:"1",
+   callback,
+   key:API_KEY,
+   ...params
+  });
+
+  script.onerror=()=>{
+   if(completed)return;
+   completed=true;
+   clearTimeout(timer);
+   cleanup();
+   reject(new Error("Server connection failed."));
+  };
+
+  script.src=API_URL+"?"+query.toString();
+  document.body.appendChild(script);
+ });
+}
+
+
+/* LOAD BUTTONS */
+
+function renderLoad(pin,state){
+ states[pin]=Number(state);
+
+ const index=Number(pin.substring(1));
+ const button=$("b"+index);
+
+ button.textContent=states[pin]?"ON":"OFF";
+ button.className=states[pin]?"on":"off";
+}
+
+
+/* MANUAL AND VOICE LOAD CONTROL */
+
+async function controlLoad(pin,state){
+ if(busy)return false;
+
+ busy=true;
+ setStatus("Sending command...");
+
+ try{
+  await callServer({
+   action:"load",
+   pin,
+   state:String(state)
+  });
+
+  renderLoad(pin,state);
+
+  say(names[pin]+
+   (state?" switched ON.":" switched OFF."));
+
+  setStatus("Command successful");
+  return true;
+
+ }catch(error){
+  setStatus(error.message,false);
+  say("Unable to control "+names[pin]+".");
+  return false;
+
+ }finally{
+  busy=false;
+ }
+}
+
+async function allOff(){
+ if(busy)return false;
+
+ busy=true;
+ setStatus("Switching off all loads...");
+
+ try{
+  await callServer({action:"allOff"});
+
+  Object.keys(states).forEach(pin=>renderLoad(pin,0));
+
+  say("All five loads are switched off.");
+  setStatus("All loads OFF");
+  return true;
+
+ }catch(error){
+  setStatus(error.message,false);
+  say("Unable to switch off all loads.");
+  return false;
+
+ }finally{
+  busy=false;
+ }
+}
+
+
+/* MANUAL BUTTON EVENTS */
+
+Object.keys(states).forEach(pin=>{
+ const index=Number(pin.substring(1));
+
+ $("b"+index).addEventListener("click",()=>{
+  controlLoad(pin,states[pin]?0:1);
+ });
+});
+
+$("allOff").addEventListener("click",allOff);
+
+
+/* ELECTRICAL MONITORING */
+
+function numberValue(value){
+ const n=Number(value);
+ return Number.isFinite(n)?n:null;
+}
+
+async function refreshData(){
+ if(refreshBusy)return null;
+
+ refreshBusy=true;
+
+ try{
+  const result=await callServer({action:"dashboard"});
+  const v=result.values;
+
+  for(let i=0;i<5;i++){
+   renderLoad("V"+i,v["V"+i]);
+  }
+
+  const voltage=numberValue(v.V5);
+  const current=numberValue(v.V6);
+  const power=numberValue(v.V7);
+  const energy=numberValue(v.V8);
+
+  $("voltage").textContent=
+   voltage===null?"-- V":voltage.toFixed(2)+" V";
+
+  $("current").textContent=
+   current===null?"-- A":current.toFixed(3)+" A";
+
+  $("power").textContent=
+   power===null?"-- W":power.toFixed(2)+" W";
+
+  $("energy").textContent=
+   energy===null?"-- Wh":energy.toFixed(3)+" Wh";
+
+  $("updated").textContent=
+   "Updated "+new Date().toLocaleTimeString();
+
+  setStatus("Connected to Blynk",true);
+  return v;
+
+ }catch(error){
+  setStatus("Monitoring connection error",false);
+  return null;
+
+ }finally{
+  refreshBusy=false;
+ }
+}
+
+
+/* TEXT NORMALIZATION */
+
+function normalize(text){
+ return String(text).toLowerCase()
+  .normalize("NFC")
+  .replace(/[.,!?।;:]/g," ")
+  .replace(/\s+/g," ")
+  .trim();
+}
+
+function includesAny(text,phrases){
+ return phrases.some(word=>text.includes(word));
+}
+
+function hasWord(text,word){
+ return new RegExp("(^|\\s)"+word+"($|\\s)","i").test(text);
+}
+
+
+/* GREETING AND CONVERSATION */
+
+function conversationIntent(t){
+
+ if(includesAny(t,[
+  "who are you","what are you","your identity",
+  "तुम कौन हो","आप कौन हो","तुम्हारा परिचय",
+  "अपना परिचय"
+ ])){
+  return "identity";
+ }
+
+ if(includesAny(t,[
+  "how are you","how are you doing",
+  "कैसे हो","कैसी हो","कैसा चल रहा है"
+ ])){
+  return "how";
+ }
+
+ if(includesAny(t,[
+  "what can you do","what can you control",
+  "help","क्या कर सकती हो","क्या कर सकते हो",
+  "क्या क्या कर सकती","मदद"
+ ])){
+  return "help";
+ }
+
+ if(includesAny(t,[
+  "thank you","thanks","धन्यवाद","शुक्रिया"
+ ])){
+  return "thanks";
+ }
+
+ if(includesAny(t,[
+  "hello","hi jasmin","hey jasmin",
+  "हेलो","नमस्ते","नमस्कार","हाय","हेलो जैस्मिन"
+ ])||hasWord(t,"hi")){
+  return "greeting";
+ }
+
+ return null;
+}
+
+
+/* RECOGNIZE ELECTRICAL READINGS */
+
+function readingIntent(t){
+
+ if(includesAny(t,[
+  "voltage","volt","वोल्टेज","वोल्ट",
+  "बैटरी वोल्टेज"
+ ]))return "voltage";
+
+ if(includesAny(t,[
+  "current","ampere","amps","amp",
+  "करंट","धारा","एम्पियर"
+ ]))return "current";
+
+ if(includesAny(t,[
+  "power","watt","watts","वाट","पावर",
+  "कितनी बिजली"
+ ]))return "power";
+
+ if(includesAny(t,[
+  "energy","consumption","units",
+  "ऊर्जा","एनर्जी","खपत","यूनिट"
+ ]))return "energy";
+
+ return null;
+}
+
+
+/* RECOGNIZE LOAD NAME */
+
+function identifyLoad(t){
+
+ // Lamp 1
+ if(includesAny(t,[
+  "lamp 1","lamp one","lamp number one",
+  "first lamp","first light","light one",
+  "bulb one","light number one",
+  "पहला लैंप","पहली लाइट","पहला बल्ब",
+  "लैंप एक","लाइट एक","पहली लैम्प",
+  "पहला लैप","पहली लैंप"
+ ]))return "V0";
+
+ // Lamp 2
+ if(includesAny(t,[
+  "lamp 2","lamp two","lamp number two",
+  "second lamp","second light","light two",
+  "bulb two","light number two",
+  "दूसरा लैंप","दूसरी लाइट","दूसरा बल्ब",
+  "लैंप दो","लाइट दो","दूसरी लैम्प"
+ ]))return "V1";
+
+ // Motor
+ if(includesAny(t,[
+  "geared motor","gear motor","motor",
+  "मोटर","मोटर का"
+ ]))return "V2";
+
+ // Fan
+ if(includesAny(t,[
+  "cooler fan","cooler","fan",
+  "पंखा","कूलर","फैन"
+ ]))return "V3";
+
+ // Pump
+ if(includesAny(t,[
+  "water pump","pump","पंप","पम्प",
+  "पानी का पंप","पानी का मोटर"
+ ]))return "V4";
+
+ return null;
+}
+
+
+/* RECOGNIZE ON AND OFF ACTION */
+
+function identifyAction(t){
+
+ const onWords=[
+  "turn on","switch on","power on",
+  "start","start the"," on",
+  "चालू","चालु","चला दो","चलाओ",
+  "जला दो","जलाओ","ऑन","आन",
+  "स्टार्ट","खोल दो"
+ ];
+
+ const offWords=[
+  "turn off","switch off","power off",
+  "stop","stop the"," off",
+  "बंद","बन्द","बुझाओ","बुझा दो",
+  "रोक दो","रोक","ऑफ","बंद करो"
+ ];
+
+ const on=includesAny(t,onWords);
+ const off=includesAny(t,offWords);
+
+ if(on===off)return null;
+
+ return on?1:0;
+}
+
+
+/* COMMAND IDENTIFICATION */
+
+function identifyCommand(raw){
+
+ const t=normalize(raw);
+
+ // All loads OFF
+ if(includesAny(t,[
+  "turn off all","switch off all",
+  "all loads off","all off",
+  "turn everything off","shut everything down",
+  "सब बंद","सभी बंद","सब कुछ बंद",
+  "सारे बंद","सभी लोड बंद",
+  "सभी लोड बंद करो","सब कुछ बंद करो",
+  "सबको बंद करो"
+ ])){
+  return {type:"allOff"};
+ }
+
+ // Conversation
+ const conversation=conversationIntent(t);
+ if(conversation){
+  return {type:"conversation",intent:conversation};
+ }
+
+ // Electrical readings
+ const reading=readingIntent(t);
+ if(reading){
+  return {type:"reading",reading};
+ }
+
+ // System status
+ if(includesAny(t,[
+  "system status","load status","status",
+  "कौन चालू है","कौन बंद है",
+  "लोड की स्थिति","सिस्टम की स्थिति",
+  "स्थिति बताओ","स्टेटस बताओ"
+ ])){
+  return {type:"status"};
+ }
+
+ // Individual load
+ const pin=identifyLoad(t);
+ const action=identifyAction(t);
+
+ if(pin!==null&&action!==null){
+  return {type:"load",pin,state:action};
+ }
+
+ return null;
+}
+
+
+/* ANSWER ELECTRICAL QUESTIONS */
+
+async function answerReading(type){
+
+ const values=await refreshData();
+
+ if(!values){
+  say("Unable to read electrical data.");
+  return;
+ }
+
+ const display={
+  voltage:$("voltage").textContent,
+  current:$("current").textContent,
+  power:$("power").textContent,
+  energy:$("energy").textContent
+ };
+
+ const hindi=$("language").value==="hi-IN";
+
+ const messages={
+  voltage:hindi?
+   "वर्तमान वोल्टेज "+display.voltage:
+   "The present voltage is "+display.voltage,
+
+  current:hindi?
+   "वर्तमान करंट "+display.current:
+   "The present current is "+display.current,
+
+  power:hindi?
+   "कुल पावर "+display.power:
+   "The total power is "+display.power,
+
+  energy:hindi?
+   "कुल ऊर्जा खपत "+display.energy:
+   "The total energy consumption is "+display.energy
+ };
+
+ say(messages[type]);
+}
+
+
+/* SYSTEM STATUS */
+
+async function answerStatus(){
+
+ const values=await refreshData();
+
+ if(!values){
+  say("Unable to check system status.");
+  return;
+ }
+
+ const active=Object.keys(states)
+  .filter(pin=>states[pin])
+  .map(pin=>names[pin]);
+
+ if(active.length){
+  say("Currently ON: "+active.join(", "));
+ }else{
+  say("All five loads are switched off.");
+ }
+}
+
+
+/* PROCESS RECOGNIZED COMMAND */
+
+async function executeIntent(intent){
+
+ if(!intent)return;
+
+ if(intent.type==="conversation"){
+
+  const hindi=$("language").value==="hi-IN";
+
+  const responses={
+   greeting:hindi?
+    "नमस्ते! मैं जैस्मिन हूँ। बताइए, मैं आपकी क्या मदद कर सकती हूँ?":
+    "Hello! I am Jasmin. How can I help you?",
+
+   identity:hindi?
+    "मैं जैस्मिन हूँ, आपका स्मार्ट इंडस्ट्रियल लोड असिस्टेंट।":
+    "I am Jasmin, your smart industrial load assistant.",
+
+   how:hindi?
+    "मैं बिल्कुल ठीक हूँ। आपकी मदद के लिए तैयार हूँ।":
+    "I am working perfectly. I am ready to help you.",
+
+   help:hindi?
+    "मैं पांचों लोड नियंत्रित कर सकती हूँ और वोल्टेज, करंट, पावर तथा ऊर्जा की जानकारी दे सकती हूँ।":
+    "I can control five loads and monitor voltage, current, power and energy.",
+
+   thanks:hindi?
+    "आपका स्वागत है।":
+    "You are welcome!"
+  };
+
+  say(responses[intent.intent]);
+  return;
+ }
+
+ if(intent.type==="allOff"){
+  await allOff();
+  return;
+ }
+
+ if(intent.type==="load"){
+  await controlLoad(intent.pin,intent.state);
+  return;
+ }
+
+ if(intent.type==="reading"){
+  await answerReading(intent.reading);
+  return;
+ }
+
+ if(intent.type==="status"){
+  await answerStatus();
+  return;
+ }
+}
+
+
+/* VOICE COMMAND PROCESSOR */
+
+async function processCommand(raw,alternatives=[]){
+
+ $("heard").textContent="You said: "+raw;
+
+ addHistory("YOU",raw);
+
+ // Try the best transcript and available alternatives.
+ const candidates=[raw,...alternatives];
+
+ let intent=null;
+
+ for(const candidate of candidates){
+  intent=identifyCommand(candidate);
+  if(intent)break;
+ }
+
+ // Unknown commands stay silent.
+ if(!intent){
+  $("reply").textContent="";
+  return;
+ }
+
+ await executeIntent(intent);
+}
+
+
+/* CONTINUOUS SPEECH RECOGNITION */
+
+function startListening(){
+
+ const SpeechRecognition=
+  window.SpeechRecognition||
+  window.webkitSpeechRecognition;
+
+ if(!SpeechRecognition){
+  setStatus("Speech recognition unsupported",false);
+  $("heard").textContent="Please use Google Chrome.";
+  return;
+ }
+
+ if(listening)return;
+
+ listening=true;
+ $("mic").classList.add("active");
+ setStatus("JASMIN is listening",true);
+
+ startRecognitionSession();
+}
+
+
+function startRecognitionSession(){
+
+ if(!listening||speaking||processingVoice)return;
+
+ const SpeechRecognition=
+  window.SpeechRecognition||
+  window.webkitSpeechRecognition;
+
+ if(!SpeechRecognition)return;
+
+ recognition=new SpeechRecognition();
+
+ recognition.lang=$("language").value;
+ recognition.continuous=false;
+ recognition.interimResults=false;
+ recognition.maxAlternatives=5;
+
+ recognition.onstart=()=>{
+  if(!speaking){
+   $("heard").textContent="Listening... Speak now.";
+  }
+ };
+
+ recognition.onresult=async event=>{
+
+  const result=event.results[0];
+
+  const transcript=result[0].transcript;
+
+  const alternatives=[];
+
+  for(let i=1;i<result.length;i++){
+   alternatives.push(result[i].transcript);
+  }
+
+  const now=Date.now();
+
+  if(now-lastCommandTime<900)return;
+
+  lastCommandTime=now;
+  processingVoice=true;
+
+  try{
+   await processCommand(transcript,alternatives);
+  }catch(error){
+   setStatus(error.message,false);
+   say("There was a problem executing your command.");
+  }finally{
+   processingVoice=false;
+   scheduleRestart();
+  }
+ };
+
+
+ recognition.onerror=event=>{
+
+  if(event.error==="not-allowed"||
+     event.error==="service-not-allowed"){
+
+   listening=false;
+   $("mic").classList.remove("active");
+   setStatus("Microphone permission blocked",false);
+   $("heard").textContent="Allow microphone permission and retry.";
+
+  }else if(event.error==="network"){
+
+   setStatus("Speech network error. Retrying...",false);
+
+  }else if(event.error==="no-speech"){
+
+   $("heard").textContent="Listening...";
+
+  }else if(event.error!=="aborted"){
+
+   setStatus("Voice error: "+event.error,false);
+  }
+ };
+
+
+ recognition.onend=()=>{
+  if(listening&&!speaking&&!processingVoice){
+   scheduleRestart();
+  }
+ };
+
+
+ try{
+  recognition.start();
+ }catch(error){
+  scheduleRestart();
+ }
+}
+
+
+/* STOP LISTENING */
+
+function stopListening(){
+
+ listening=false;
+ clearTimeout(restartTimer);
+
+ if(recognition){
+  try{recognition.abort()
